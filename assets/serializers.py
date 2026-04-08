@@ -18,8 +18,8 @@ class AssignmentSerializer(serializers.ModelSerializer):
         model = Assignment
         fields = '__all__'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def _init_(self, *args, **kwargs):
+        super()._init_(*args, **kwargs)
         request = self.context.get('request')
 
         if request and request.method in ['POST', 'PUT', 'PATCH']:
@@ -35,3 +35,30 @@ class AssignmentSerializer(serializers.ModelSerializer):
             )
 
         return data
+
+    def create(self, validated_data):
+        assignment = Assignment.objects.create(**validated_data)
+
+        if assignment.returned_at is None:
+            assignment.asset.is_assigned = True
+        else:
+            assignment.asset.is_assigned = False
+
+        assignment.asset.save()
+        return assignment
+
+    def update(self, instance, validated_data):
+        instance.assigned_at = validated_data.get('assigned_at', instance.assigned_at)
+        instance.returned_at = validated_data.get('returned_at', instance.returned_at)
+        instance.notes = validated_data.get('notes', instance.notes)
+        instance.asset = validated_data.get('asset', instance.asset)
+        instance.employee = validated_data.get('employee', instance.employee)
+
+        if instance.returned_at is None:
+            instance.asset.is_assigned = True
+        else:
+            instance.asset.is_assigned = False
+
+        instance.asset.save()
+        instance.save()
+        return instance
