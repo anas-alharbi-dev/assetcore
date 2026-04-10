@@ -4,7 +4,7 @@ from .models import Asset, Employee, Assignment
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ("full_name", "employee_id", "department")
+    list_display = ("full_name", "employee_id", "email", "department", "user")
     search_fields = ("full_name", "employee_id", "email")
 
 

@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 
 class Employee(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     full_name = models.CharField(max_length=255)
     employee_id = models.CharField(max_length=100, unique=True)
     email = models.EmailField(unique=True)
@@ -49,7 +50,7 @@ class Asset(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
 
     is_assigned = models.BooleanField(default=False)
-    assigned_to = models.CharField(max_length=200, blank=True, null=True)
+    
 
     location = models.CharField(max_length=200, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
