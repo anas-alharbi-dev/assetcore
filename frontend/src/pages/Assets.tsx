@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-
+import { authFetch } from "../lib/auth";
 type Asset = {
     id: number;
     name: string;
@@ -18,7 +18,6 @@ type AssetForm = {
 };
 
 const API_BASE = "http://127.0.0.1:8000/api";
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2MTc0ODkxLCJpYXQiOjE3NzYxNzQ1OTEsImp0aSI6IjI3ZmYyZmNhYTM5YTQyZTQ4OTU5ZjI3YzhkOGUyZGU3IiwidXNlcl9pZCI6IjEifQ.SsETBMPc_gsh6nz5c1Y2E941XUQ7Q8NYScsa69z1wa0";
 
 function Assets() {
 const [assets, setAssets] = useState<Asset[]>([]);
@@ -44,11 +43,7 @@ const [form, setForm] = useState<AssetForm>({
     setLoading(true);
     setError("");
 
-fetch(`${API_BASE}/assets/`, {
-    headers: {
-    Authorization: `Bearer ${TOKEN}`,
-    },
-})
+authFetch(`${API_BASE}/assets/`)
 .then((res: Response) => {
     if (!res.ok) {
         throw new Error("Failed to fetch assets");
@@ -93,19 +88,57 @@ fetch(`${API_BASE}/assets/`, {
     try {
     setSubmitting(true);
 
-    const res = await fetch(`${API_BASE}/assets/`, {
-        method: "POST",
-        headers: {
+   const handleAddAsset = async () => {
+  if (
+    !form.name.trim() ||
+    !form.device_type.trim() ||
+    !form.serial_number.trim() ||
+    !form.asset_tag.trim()
+  ) {
+    alert("Please fill all fields.");
+    return;
+  }
+
+  try {
+    setSubmitting(true);
+
+    const res = await authFetch(`${API_BASE}/assets/`, {
+      method: "POST",
+      headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${TOKEN}`,
-        },
-        body: JSON.stringify(form),
+      },
+      body: JSON.stringify(form),
     });
 
     if (!res.ok) {
-        throw new Error("Failed to add asset");
+      throw new Error("Failed to add asset");
     }
 
+    setForm({
+      name: "",
+      device_type: "",
+      serial_number: "",
+      asset_tag: "",
+      is_assigned: false,
+    });
+
+    setShowForm(false);
+    fetchAssets();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    alert(message);
+  } finally {
+    setSubmitting(false);
+  }
+}; 
+    
+const res = await authFetch(`${API_BASE}/assets/`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(form),
+});
     setForm({
         name: "",
         device_type: "",

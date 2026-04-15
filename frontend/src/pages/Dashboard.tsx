@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-
+import { authFetch } from "../lib/auth";
 type Asset = {
   id: number;
   name: string;
@@ -10,7 +10,7 @@ type Asset = {
 };
 
 const API_BASE = "http://127.0.0.1:8000/api";
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2MTc0ODkxLCJpYXQiOjE3NzYxNzQ1OTEsImp0aSI6IjI3ZmYyZmNhYTM5YTQyZTQ4OTU5ZjI3YzhkOGUyZGU3IiwidXNlcl9pZCI6IjEifQ.SsETBMPc_gsh6nz5c1Y2E941XUQ7Q8NYScsa69z1wa0";
+
 
 function Dashboard() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -18,22 +18,17 @@ function Dashboard() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE}/assets/`, {
-      headers: {
-        Authorization: `Bearer ${TOKEN}`,
-      },
+  authFetch(`${API_BASE}/assets/`)
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Failed to fetch dashboard data");
+      }
+      return res.json();
     })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch dashboard data");
-        }
-        return res.json();
-      })
-      .then((data) => setAssets(data))
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
+    .then((data: Asset[]) => setAssets(data))
+    .catch((err: Error) => setError(err.message))
+    .finally(() => setLoading(false));
+}, []);
   const stats = useMemo(() => {
     const total = assets.length;
     const assigned = assets.filter((a) => a.is_assigned).length;
