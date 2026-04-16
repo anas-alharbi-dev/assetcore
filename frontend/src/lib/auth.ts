@@ -46,21 +46,18 @@ export async function refreshAccessToken() {
   return data.access;
 }
 
-
-
 export async function authFetch(url: string, options: RequestInit = {}) {
-  let token = getAccessToken();
+  let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2MzI5MDY4LCJpYXQiOjE3NzYzMjg3NjgsImp0aSI6IjlkMDk1NzJkYzkxZjRmNmRiNDY1Yjc2ZDkyMGMwYjIwIiwidXNlcl9pZCI6IjEifQ.0IY3pf0V6ajIaa8onX3kkHYzt0Mvzsp_5YB8_f8WwH4";
 
   const makeRequest = async (accessToken: string | null) => {
     return fetch(url, {
       ...options,
       headers: {
         ...(options.headers || {}),
-        Authorization: `Bearer ${accessToken}`,
+        Authorization:`Bearer ${accessToken}`,
       },
     });
   };
-
   let response = await makeRequest(token);
 
   // إذا انتهى التوكن (401)
