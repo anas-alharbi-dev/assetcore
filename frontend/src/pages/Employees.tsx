@@ -54,10 +54,9 @@ function Employees() {
     if (
       !fullName.trim() ||
       !employeeId.trim() ||
-      !email.trim() ||
-      !department.trim()
+      !email.trim()
     ) {
-      alert("Please fill all fields.");
+      alert("Please fill all required fields.");
       return;
     }
 
@@ -73,7 +72,7 @@ function Employees() {
           full_name: fullName,
           employee_id: employeeId,
           email,
-          department: Number(department),
+          department: 1,
         }),
       });
 
@@ -101,22 +100,10 @@ function Employees() {
   return (
     <div>
       <div style={{ marginBottom: "28px" }}>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "38px",
-            color: "#ffffff",
-          }}
-        >
+        <h1 style={{ margin: 0, fontSize: "38px", color: "#ffffff" }}>
           Employees
         </h1>
-        <p
-          style={{
-            marginTop: "8px",
-            color: "#94a3b8",
-            fontSize: "16px",
-          }}
-        >
+        <p style={{ marginTop: "8px", color: "#94a3b8", fontSize: "16px" }}>
           Manage employee records and IT ownership details
         </p>
       </div>
@@ -139,19 +126,9 @@ function Employees() {
             flexWrap: "wrap",
           }}
         >
-          <h2
-            style={{
-              margin: 0,
-              color: "#111827",
-            }}
-          >
-            Employees List
-          </h2>
+          <h2 style={{ margin: 0, color: "#111827" }}>Employees List</h2>
 
-          <button
-            onClick={() => setShowForm(!showForm)}
-            style={buttonStyle}
-          >
+          <button onClick={() => setShowForm(!showForm)} style={buttonStyle}>
             {showForm ? "Close Form" : "+ Add Employee"}
           </button>
         </div>
@@ -166,13 +143,7 @@ function Employees() {
               border: "1px solid #e2e8f0",
             }}
           >
-            <h3
-              style={{
-                marginTop: 0,
-                marginBottom: "16px",
-                color: "#111827",
-              }}
-            >
+            <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#111827" }}>
               Add New Employee
             </h3>
 
@@ -240,12 +211,7 @@ function Employees() {
           <p style={{ color: "#6b7280" }}>No employees found.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-              }}
-            >
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <th style={thStyle}>Full Name</th>
@@ -256,10 +222,7 @@ function Employees() {
               </thead>
               <tbody>
                 {employees.map((emp) => (
-                  <tr
-                    key={emp.id}
-                    style={{ borderBottom: "1px solid #f1f5f9" }}
-                  >
+                  <tr key={emp.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={tdStyle}>{emp.full_name}</td>
                     <td style={tdStyle}>{emp.employee_id}</td>
                     <td style={tdStyle}>{emp.email}</td>

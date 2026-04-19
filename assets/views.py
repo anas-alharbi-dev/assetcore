@@ -37,9 +37,6 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             return Employee.objects.all()
         return Employee.objects.filter(user=user)
 
-        # المستخدم العادي يشوف بياناته فقط
-        
-
 
 class AssignmentViewSet(viewsets.ModelViewSet):
     queryset = Assignment.objects.all()

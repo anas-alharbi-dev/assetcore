@@ -1,31 +1,33 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { authFetch } from "../lib/auth";
+
 type Asset = {
-    id: number;
-    name: string;
-    device_type: string;
-    serial_number: string;
-    asset_tag: string;
-    is_assigned: boolean;
+  id: number;
+  name: string;
+  device_type: string;
+  serial_number: string;
+  asset_tag: string;
+  is_assigned: boolean;
 };
 
 type AssetForm = {
-    name: string;
-    device_type: string;
-    serial_number: string;
-    asset_tag: string;
-    is_assigned: boolean;
+  name: string;
+  device_type: string;
+  serial_number: string;
+  asset_tag: string;
+  is_assigned: boolean;
 };
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
 function Assets() {
-const [assets, setAssets] = useState<Asset[]>([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState("");
-const [search, setSearch] = useState("");
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
-const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 const [submitting, setSubmitting] = useState(false);
 const [form, setForm] = useState<AssetForm>({
     name: "",
@@ -33,233 +35,278 @@ const [form, setForm] = useState<AssetForm>({
     serial_number: "",
     asset_tag: "",
     is_assigned: false,
-});
+  });
 
-    useEffect(() => {
-    fetchAssets();
-    }, []);
-
-    const fetchAssets = () => {
+  const fetchAssets = () => {
     setLoading(true);
     setError("");
 
-authFetch(`${API_BASE}/assets/`)
-.then((res: Response) => {
-    if (!res.ok) {
-        throw new Error("Failed to fetch assets");
-    }
-    return res.json();
-    })
-    .then((data: Asset[]) => {
-    setAssets(data);
-    })
-    .catch((err: Error) => {
-    setError(err.message);
-    })
-    .finally(() => {
-    setLoading(false);
-    });
-};
+    authFetch(`${API_BASE}/assets/`)
+      .then((res: Response) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch assets");
+        }
+        return res.json();
+      })
+      .then((data: Asset[]) => {
+        setAssets(data);
+      })
+      .catch((err: Error) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
+  useEffect(() => {
+    fetchAssets();
+  }, []);
 
-    const filteredAssets = useMemo(() => {
+  const filteredAssets = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return assets;
 
     return assets.filter((asset) =>
-    asset.name.toLowerCase().includes(q) ||
-    asset.device_type.toLowerCase().includes(q) ||
-    asset.serial_number.toLowerCase().includes(q) ||
-    asset.asset_tag.toLowerCase().includes(q)
+      asset.name.toLowerCase().includes(q) ||
+      asset.device_type.toLowerCase().includes(q) ||
+      asset.serial_number.toLowerCase().includes(q) ||
+      asset.asset_tag.toLowerCase().includes(q)
     );
-    }, [assets, search]);
+  }, [assets, search]);
 
-    const handleAddAsset = async () => {
-    if (
-    !form.name.trim() ||
-    !form.device_type.trim() ||
-    !form.serial_number.trim() ||
-    !form.asset_tag.trim()
-    ) {
-    alert("Please fill all fields.");
-    return;
-    }
+const handleEdit = (asset: Asset) => {
+  setForm({
+    name: asset.name,
+    device_type: asset.device_type,
+    serial_number: asset.serial_number,
+    asset_tag: asset.asset_tag,
+    is_assigned: asset.is_assigned,
+  });
 
-    try {
-    setSubmitting(true);
+  setEditingAsset(asset);
+  setShowForm(true);
+};
 
-   const handleAddAsset = async () => {
-  if (
-    !form.name.trim() ||
-    !form.device_type.trim() ||
-    !form.serial_number.trim() ||
-    !form.asset_tag.trim()
-  ) {
-    alert("Please fill all fields.");
-    return;
-  }
+const handleDelete = async (id: number) => {
+  if (!confirm("Are you sure you want to delete this asset?")) return;
 
   try {
-    setSubmitting(true);
-
-    const res = await authFetch(`${API_BASE}/assets/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
+    const res = await authFetch(`${API_BASE}/assets/${id}/`, {
+      method: "DELETE",
     });
 
     if (!res.ok) {
-      throw new Error("Failed to add asset");
+      throw new Error("Failed to delete asset");
     }
 
-    setForm({
-      name: "",
-      device_type: "",
-      serial_number: "",
-      asset_tag: "",
-      is_assigned: false,
-    });
-
-    setShowForm(false);
     fetchAssets();
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unexpected error";
-    alert(message);
-  } finally {
-    setSubmitting(false);
+    alert("Error deleting asset");
   }
-}; 
-    
-const res = await authFetch(`${API_BASE}/assets/`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify(form),
-});
-    setForm({
-        name: "",
-        device_type: "",
-        serial_number: "",
-        asset_tag: "",
-        is_assigned: false,
-    });
-    setShowForm(false);
-    fetchAssets();
-    } catch (err) {
-    const message = err instanceof Error ? err.message : "Unexpected error";
-    alert(message);
-    } finally {
-    setSubmitting(false);
-    }
 };
 
-return (
-    <div>
-    <div style={{ marginBottom: "28px" }}>
-        <h1 style={{ margin: 0, fontSize: "38px", color: "#ffffff" }}>Assets</h1>
-        <p style={{ marginTop: "8px", color: "#94a3b8", fontSize: "16px" }}>
-        Manage and monitor all registered IT assets
-        </p>
-    </div>
+  const handleAddAsset = async () => {
+    if (
+      !form.name.trim() ||
+      !form.device_type.trim() ||
+      !form.serial_number.trim() ||
+      !form.asset_tag.trim()
+    ) {
+      alert("Please fill all fields.");
+      return;
+    }
 
-    <div
+    try {
+      setSubmitting(true);
+
+      const res = await authFetch(
+  editingAsset
+    ? `${API_BASE}/assets/${editingAsset.id}/`
+    : `${API_BASE}/assets/`,
+  {
+    method: editingAsset ? "PUT" : "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: form.name,
+      device_type: form.device_type,
+      serial_number: form.serial_number,
+      asset_tag: form.asset_tag,
+      is_assigned: form.is_assigned,
+    }),
+  }
+);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to add asset");
+      }
+
+      setForm({
+  name: "",
+  device_type: "",
+  serial_number: "",
+  asset_tag: "",
+  is_assigned: false,
+});
+
+setShowForm(false);
+setEditingAsset(null);
+fetchAssets();
+
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unexpected error";
+      alert(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: "28px" }}>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: "38px",
+            color: "#ffffff",
+          }}
+        >
+          Assets
+        </h1>
+        <p
+          style={{
+            marginTop: "8px",
+            color: "#94a3b8",
+            fontSize: "16px",
+          }}
+        >
+          Manage and monitor all registered IT assets
+        </p>
+      </div>
+
+      <div
         style={{
-        background: "#ffffff",
-        borderRadius: "18px",
-        padding: "24px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+          background: "#ffffff",
+          borderRadius: "18px",
+          padding: "24px",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
         }}
-    >
+      >
         <div
-        style={{
-        display: "flex",
+          style={{
+            display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "20px",
             gap: "16px",
             flexWrap: "wrap",
-        }}
+          }}
         >
-        <h2 style={{ margin: 0, color: "#111827" }}>Assets List</h2>
-
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button
-        onClick={() => setShowForm((prev) => !prev)}
-        style={{
-                background: "#111827",
-                color: "white",
-                padding: "10px 16px",
-                borderRadius: "8px",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
+          <h2
+            style={{
+              margin: 0,
+              color: "#111827",
             }}
-            >
-            {showForm ? "Close Form" : "+ Add Asset"}
+          >
+            Assets List
+          </h2>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <button onClick={() => setShowForm(!showForm)} style={buttonStyle}>
+              {showForm ? "Close Form" : "+ Add Asset"}
             </button>
 
             <input
-            type="text"
-            placeholder="Search by name, type, serial, or tag..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-                width: "320px",
-                padding: "12px 14px",
-                borderRadius: "10px",
-                border: "1px solid #D1D5DB",
-                outline: "none",
-                fontSize: "14px",
-            }}
+              placeholder="Search by name, type, serial, or tag..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                ...inputStyle,
+                minWidth: "280px",
+              }}
             />
-        </div>
+          </div>
         </div>
 
         {showForm && (
-        <div
+          <div
             style={{
-            marginBottom: "22px",
-            padding: "18px",
-            borderRadius: "14px",
-            background: "#F8FAFC",
-            border: "1px solid #E5E7EB",
+              marginBottom: "24px",
+              padding: "20px",
+              background: "#f8fafc",
+              borderRadius: "14px",
+              border: "1px solid #e2e8f0",
             }}
-        >
-            <h3 style={{ marginTop: 0, color: "#111827" }}>Add New Asset</h3>
+          >
+            <h3
+              style={{
+                marginTop: 0,
+                color: "#111827",
+              }}
+            >
+              Add New Asset
+            </h3>
 
             <div
-            style={{
+              style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                 gap: "12px",
                 marginBottom: "14px",
-            }}
+              }}
             >
-            <input
+              <input
                 placeholder="Name"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                style={inputStyle}
-            />
-            <input
-                placeholder="Device Type"
-                value={form.device_type}
-                onChange={(e) => setForm({ ...form, device_type: e.target.value })}
-                style={inputStyle}
-            />
-            <input
-                placeholder="Serial Number"
-                value={form.serial_number}
-                onChange={(e) => setForm({ ...form, serial_number: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, name: e.target.value })
+                }
                 style={inputStyle}
               />
+
+              <select
+                value={form.device_type}
+                onChange={(e) =>
+                  setForm({ ...form, device_type: e.target.value })
+                }
+                style={inputStyle}
+              >
+                <option value="">Select Type</option>
+                <option value="laptop">Laptop</option>
+                <option value="desktop">Desktop</option>
+                <option value="monitor">Monitor</option>
+                <option value="printer">Printer</option>
+                <option value="phone">Phone</option>
+                <option value="tablet">Tablet</option>
+                <option value="other">Other</option>
+              </select>
+
+              <input
+                placeholder="Serial Number"
+                value={form.serial_number}
+                onChange={(e) =>
+                  setForm({ ...form, serial_number: e.target.value })
+                }
+                style={inputStyle}
+              />
+
               <input
                 placeholder="Asset Tag"
                 value={form.asset_tag}
-                onChange={(e) => setForm({ ...form, asset_tag: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, asset_tag: e.target.value })
+                }
                 style={inputStyle}
               />
             </div>
@@ -284,34 +331,18 @@ return (
               Assigned
             </label>
 
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <button
                 onClick={handleAddAsset}
                 disabled={submitting}
-                style={{
-                  background: "#111827",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "10px 16px",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
+                style={buttonStyle}
               >
                 {submitting ? "Adding..." : "Save Asset"}
               </button>
 
               <button
                 onClick={() => setShowForm(false)}
-                style={{
-                  background: "#E5E7EB",
-                  color: "#111827",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "10px 16px",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
+                style={secondaryButtonStyle}
               >
                 Cancel
               </button>
@@ -319,17 +350,20 @@ return (
           </div>
         )}
 
-        {loading && (
-          <p style={{ color: "#6B7280", margin: 0 }}>Loading assets...</p>
-        )}
-
-        {error && (
-          <p style={{ color: "#DC2626", margin: 0 }}>{error}</p>
-        )}
-
-        {!loading && !error && (
+        {loading ? (
+          <p style={{ color: "#6b7280" }}>Loading assets...</p>
+        ) : error ? (
+          <p style={{ color: "red" }}>{error}</p>
+        ) : filteredAssets.length === 0 ? (
+          <p style={{ color: "#6b7280" }}>No assets found.</p>
+        ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+              }}
+            >
               <thead>
                 <tr style={{ borderBottom: "1px solid #E5E7EB" }}>
                   <th style={thStyle}>Name</th>
@@ -339,15 +373,15 @@ return (
                   <th style={thStyle}>Status</th>
                 </tr>
               </thead>
-
               <tbody>
                 {filteredAssets.map((asset) => (
-                  <tr key={asset.id} style={{ borderBottom: "1px solid #F3F4F6" }}>
+                  <tr key={asset.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
                     <td style={tdStyle}>{asset.name}</td>
                     <td style={tdStyle}>{asset.device_type}</td>
                     <td style={tdStyle}>{asset.serial_number}</td>
                     <td style={tdStyle}>{asset.asset_tag}</td>
                     <td style={tdStyle}>
+                      
                       <span
                         style={{
                           padding: "6px 10px",
@@ -361,23 +395,12 @@ return (
                         {asset.is_assigned ? "Assigned" : "Available"}
                       </span>
                     </td>
-                  </tr>
-                ))}
-
-                {filteredAssets.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      style={{
-                        padding: "24px",
-                        textAlign: "center",
-                        color: "#6B7280",
-                      }}
-                    >
-                      No assets found.
+                  <td>
+                <button onClick={() => handleEdit(asset)}>Edit</button>
+                <button onClick={() => handleDelete(asset.id)}>Delete</button>
                     </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
@@ -387,18 +410,41 @@ return (
   );
 }
 
+const buttonStyle: CSSProperties = {
+  background: "#0f172a",
+  color: "#ffffff",
+  border: "none",
+  borderRadius: "10px",
+  padding: "12px 18px",
+  cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: 600,
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  background: "#e5e7eb",
+  color: "#111827",
+  border: "none",
+  borderRadius: "10px",
+  padding: "12px 18px",
+  cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: 600,
+};
+
 const inputStyle: CSSProperties = {
   padding: "12px 14px",
   borderRadius: "10px",
-  border: "1px solid #D1D5DB",
+  border: "1px solid #d1d5db",
   fontSize: "14px",
   outline: "none",
+  background: "#ffffff",
 };
 
- const thStyle: CSSProperties = {
+const thStyle: CSSProperties = {
   textAlign: "left",
   padding: "14px 12px",
-  color: "#6B7280",
+  color: "#6b7280",
   fontSize: "14px",
   fontWeight: 700,
 };
@@ -408,5 +454,4 @@ const tdStyle: CSSProperties = {
   color: "#111827",
   fontSize: "14px",
 };
-
 export default Assets;
