@@ -34,6 +34,7 @@ function Assignments() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<any | null>(null);
 
   const [form, setForm] = useState({
     asset: "",
@@ -85,6 +86,58 @@ function Assignments() {
     loadData();
   }, []);
 
+     const handleEdit = (assignment: any) => {
+      setEditingAssignment(assignment);
+
+  setForm({
+    asset: assignment.asset,
+    employee: assignment.employee,
+    assigned_at: assignment.assigned_at,
+    notes: assignment.notes || "",
+  });
+
+  setShowForm(true);
+};
+const handleDelete = async (id: number) => {
+  if (!confirm("Are you sure you want to delete this assignment?")) return;
+
+  try {
+    const res = await authFetch(`${API_BASE}/assignments/${id}/`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to delete assignment");
+    }
+
+    await loadData();
+  } catch (err) {
+    alert("Error deleting assignment");
+  }
+};
+  
+   const handleReturn = async (id: number) => {
+  try {
+    const res = await authFetch(`${API_BASE}/assignments/${id}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        returned_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || "Failed to return asset");
+    }
+
+    await loadData();
+  } catch (err) {
+    alert(err instanceof Error ? err.message : "Unexpected error");
+  }
+};
   const handleAddAssignment = async () => {
     if (!form.asset || !form.employee || !form.assigned_at) {
       alert("Please fill required fields.");
@@ -276,13 +329,24 @@ function Assignments() {
               </thead>
               <tbody>
                 {assignments.map((assignment) => (
-                  <tr key={assignment.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td style={tdStyle}>{getAssetName(assignment.asset)}</td>
-                    <td style={tdStyle}>{getEmployeeName(assignment.employee)}</td>
-                    <td style={tdStyle}>{assignment.assigned_at || "-"}</td>
-                    <td style={tdStyle}>{assignment.returned_at || "-"}</td>
-                    <td style={tdStyle}>{assignment.notes || "-"}</td>
-                  </tr>
+                <tr key={assignment.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                <td style={tdStyle}>{getAssetName(assignment.asset)}</td>
+                <td style={tdStyle}>{getEmployeeName(assignment.employee)}</td>
+                <td style={tdStyle}>{assignment.assigned_at || "-"}</td>
+                <td style={tdStyle}>{assignment.returned_at || "-"}</td>
+                <td style={tdStyle}>{assignment.notes || "-"}</td>
+                <td style={tdStyle}>
+  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+    {!assignment.returned_at && (
+      <button onClick={() => handleReturn(assignment.id)}>Return</button>
+    )}
+
+    <button onClick={() => handleDelete(assignment.id)}>Delete</button>
+
+    <button onClick={() => handleEdit(assignment)}>Edit</button>
+  </div>
+</td>
+</tr>
                 ))}
               </tbody>
             </table>
