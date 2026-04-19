@@ -18,6 +18,7 @@ function Employees() {
 
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   const [fullName, setFullName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
@@ -50,6 +51,33 @@ function Employees() {
     fetchEmployees();
   }, []);
 
+  const handleEdit = (employee: Employee) => {
+  setFullName(employee.full_name);
+  setEmployeeId(employee.employee_id);
+  setEmail(employee.email);
+  setDepartment(String(employee.department));
+  setEditingEmployee(employee);
+  setShowForm(true);
+};
+
+const handleDelete = async (id: number) => {
+  if (!confirm("Are you sure you want to delete this employee?")) return;
+
+  try {
+    const res = await authFetch(`${API_BASE}/employees/${id}/`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to delete employee");
+    }
+
+    fetchEmployees();
+  } catch (err) {
+    alert("Error deleting employee");
+  }
+};
+
   const handleAddEmployee = async () => {
     if (
       !fullName.trim() ||
@@ -63,18 +91,23 @@ function Employees() {
     try {
       setSubmitting(true);
 
-      const res = await authFetch(`${API_BASE}/employees/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          full_name: fullName,
-          employee_id: employeeId,
-          email,
-          department: 1,
-        }),
-      });
+      const res = await authFetch(
+  editingEmployee
+    ? `${API_BASE}/employees/${editingEmployee.id}/`
+    : `${API_BASE}/employees/`,
+  {
+    method: editingEmployee ? "PUT" : "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      full_name: fullName,
+      employee_id: employeeId,
+      email,
+      department: Number(department) || 1,
+    }),
+  }
+);
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -82,12 +115,15 @@ function Employees() {
       }
 
       setFullName("");
-      setEmployeeId("");
-      setEmail("");
-      setDepartment("");
-      setShowForm(false);
+setEmployeeId("");
+setEmail("");
+setDepartment("");
+setShowForm(false);
+setEditingEmployee(null);
 
-      fetchEmployees();
+fetchEmployees();
+
+
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unexpected error occurred";
@@ -190,7 +226,11 @@ function Employees() {
                 disabled={submitting}
                 style={buttonStyle}
               >
-                {submitting ? "Saving..." : "Save Employee"}
+                {submitting
+                ? "Saving..."
+                : editingEmployee
+                ? "Update Employee"
+                : "Save Employee"}
               </button>
 
               <button
@@ -218,6 +258,7 @@ function Employees() {
                   <th style={thStyle}>Employee ID</th>
                   <th style={thStyle}>Email</th>
                   <th style={thStyle}>Department</th>
+                  <th style={thStyle}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -227,6 +268,10 @@ function Employees() {
                     <td style={tdStyle}>{emp.employee_id}</td>
                     <td style={tdStyle}>{emp.email}</td>
                     <td style={tdStyle}>{emp.department}</td>
+                  <td style={tdStyle}> </td>
+                    <button onClick={() => handleEdit(emp)}>Edit</button>
+                    <button onClick={() => handleDelete(emp.id)}>Delete</button>
+
                   </tr>
                 ))}
               </tbody>
