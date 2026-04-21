@@ -1,7 +1,11 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 
-function Layout() {
+type LayoutProps = {
+  onLogout: () => void;
+};
+
+function Layout({ onLogout }: LayoutProps) {
   return (
     <div
       style={{
@@ -11,7 +15,7 @@ function Layout() {
         gridTemplateColumns: "260px 1fr",
       }}
     >
-      <Sidebar />
+      <Sidebar onLogout={onLogout} />
 
       <main
         style={{

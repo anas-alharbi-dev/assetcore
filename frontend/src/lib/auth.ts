@@ -72,9 +72,10 @@ export async function authFetch(url: string, options: RequestInit = {}) {
       const newAccess = await refreshAccessToken();
       response = await makeRequest(newAccess);
     } catch (err) {
-      clearTokens();
-      throw new Error("Session expired. Please login again.");
-    }
+  clearTokens();
+  window.location.href = "/login";
+  throw new Error("Session expired. Please login again.");
+}
   }
 
   return response;
