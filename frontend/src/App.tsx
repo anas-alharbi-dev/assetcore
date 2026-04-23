@@ -7,6 +7,7 @@ import Assets from "./pages/Assets";
 import Employees from "./pages/Employees";
 import Assignments from "./pages/Assignments";
 import Login from "./pages/Login";
+import Reports from "./pages/Reports";
 import "./App.css";
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
           <Route path="assets" element={<Assets />} />
           <Route path="employees" element={<Employees />} />
           <Route path="assignments" element={<Assignments />} />
+          <Route path="/reports" element={<Reports />} />
         </Route>
       </Routes>
     </BrowserRouter>

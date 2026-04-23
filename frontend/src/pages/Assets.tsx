@@ -7,6 +7,7 @@ type Asset = {
   device_type: string;
   serial_number: string;
   asset_tag: string;
+  purchase_date?: string | null;
   is_assigned: boolean;
 };
 
@@ -15,6 +16,7 @@ type AssetForm = {
   device_type: string;
   serial_number: string;
   asset_tag: string;
+  purchase_date: string;
   is_assigned: boolean;
 };
 
@@ -34,6 +36,7 @@ const [form, setForm] = useState<AssetForm>({
     device_type: "",
     serial_number: "",
     asset_tag: "",
+    purchase_date: "",
     is_assigned: false,
   });
 
@@ -81,6 +84,7 @@ const handleEdit = (asset: Asset) => {
     device_type: asset.device_type,
     serial_number: asset.serial_number,
     asset_tag: asset.asset_tag,
+    purchase_date: asset .purchase_date || "",
     is_assigned: asset.is_assigned,
   });
 
@@ -112,6 +116,7 @@ const handleDelete = async (id: number) => {
       !form.device_type.trim() ||
       !form.serial_number.trim() ||
       !form.asset_tag.trim()
+
     ) {
       alert("Please fill all fields.");
       return;
@@ -134,6 +139,7 @@ const handleDelete = async (id: number) => {
       device_type: form.device_type,
       serial_number: form.serial_number,
       asset_tag: form.asset_tag,
+      purchase_date: form.purchase_date || null,
       is_assigned: form.is_assigned,
     }),
   }
@@ -149,6 +155,7 @@ const handleDelete = async (id: number) => {
   device_type: "",
   serial_number: "",
   asset_tag: "",
+  purchase_date: "",
   is_assigned: false,
 });
 
@@ -309,6 +316,15 @@ fetchAssets();
                 }
                 style={inputStyle}
               />
+
+              <input
+                type="date"
+                value={form.purchase_date}
+                onChange={(e) =>
+                  setForm({ ...form, purchase_date: e.target.value })
+                }
+                style={inputStyle}
+              />
             </div>
 
             <label
@@ -370,6 +386,7 @@ fetchAssets();
                   <th style={thStyle}>Type</th>
                   <th style={thStyle}>Serial Number</th>
                   <th style={thStyle}>Asset Tag</th>
+                  <th style={thStyle}>Purchase Date</th>
                   <th style={thStyle}>Status</th>
                 </tr>
               </thead>
@@ -379,6 +396,7 @@ fetchAssets();
                     <td style={tdStyle}>{asset.name}</td>
                     <td style={tdStyle}>{asset.device_type}</td>
                     <td style={tdStyle}>{asset.serial_number}</td>
+                    <td style={tdStyle}>{asset.asset_tag}</td>
                     <td style={tdStyle}>{asset.asset_tag}</td>
                     <td style={tdStyle}>
                       

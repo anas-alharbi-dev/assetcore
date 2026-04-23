@@ -69,6 +69,10 @@ function Sidebar({ onLogout }: SidebarProps) {
         <NavLink to="/assignments" style={linkStyle}>
           Assignments
         </NavLink>
+
+        <NavLink to="/reports" style={linkStyle}>
+          Reports
+        </NavLink>
       </nav>
 
       <div style={{ marginTop: "auto" }}>

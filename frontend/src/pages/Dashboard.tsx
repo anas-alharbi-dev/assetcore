@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { authFetch } from "../lib/auth";
 type Asset = {
   id: number;
@@ -6,36 +6,50 @@ type Asset = {
   device_type: string;
   serial_number: string;
   asset_tag: string;
+  purchase_date: string | null;
   is_assigned: boolean;
+};
+
+type Summary = {
+  total_assets: number;
+  assigned_assets: number;
+  available_assets: number;
+  total_employees: number;
+  total_assignments: number;
 };
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
-
 function Dashboard() {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-  authFetch(`${API_BASE}/assets/`)
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Failed to fetch dashboard data");
-      }
-      return res.json();
-    })
-    .then((data: Asset[]) => setAssets(data))
+  Promise.all([
+    authFetch(`${API_BASE}/assets/`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch assets");
+        }
+        return res.json();
+      })
+      .then((data: Asset[]) => setAssets(data)),
+
+    authFetch(`${API_BASE}/reports/summary/`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch summary");
+        }
+        return res.json();
+      })
+      .then((data: Summary) => setSummary(data)),
+  ])
     .catch((err: Error) => setError(err.message))
     .finally(() => setLoading(false));
 }, []);
-  const stats = useMemo(() => {
-    const total = assets.length;
-    const assigned = assets.filter((a) => a.is_assigned).length;
-    const available = total - assigned;
-    return { total, assigned, available };
-  }, [assets]);
-
+  
   return (
     <div>
       <div style={{ marginBottom: "28px" }}>
@@ -67,9 +81,11 @@ function Dashboard() {
               marginBottom: "24px",
             }}
           >
-            <StatCard title="Total Assets" value={stats.total} />
-            <StatCard title="Assigned Assets" value={stats.assigned} />
-            <StatCard title="Available Assets" value={stats.available} />
+            <StatCard title="Total Assets" value={summary?.total_assets ?? 0} />
+            <StatCard title="Assigned Assets" value={summary?.assigned_assets ?? 0} />
+            <StatCard title="Available Assets" value={summary?.available_assets ?? 0} />
+            <StatCard title="Employees" value={summary?.total_employees ?? 0} />
+            <StatCard title="Assignments" value={summary?.total_assignments ?? 0} />
           </div>
 
           <div
