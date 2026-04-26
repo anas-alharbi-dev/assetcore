@@ -26,9 +26,16 @@ function Reports() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [assetStatus, setAssetStatus] = useState("");
+const [assetType, setAssetType] = useState("");
 
-  const handleDownloadExcel = () => {
-  authFetch(`${API_BASE}/reports/export-excel/`)
+ const handleDownloadExcel = () => {
+  const params = new URLSearchParams();
+
+  if (assetStatus) params.append("status", assetStatus);
+  if (assetType) params.append("type", assetType);
+
+  authFetch(`${API_BASE}/reports/export-excel/?${params.toString()}`)
     .then((res) => res.blob())
     .then((blob) => {
       const url = window.URL.createObjectURL(blob);
@@ -99,14 +106,12 @@ function Reports() {
             marginTop: "24px",
           }}
         >
-          <div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "16px",
-  }}
->
+         <div style={{
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "16px"
+}}>
   <h2 style={{ margin: 0 }}>Assets Report</h2>
 
   <button
@@ -123,7 +128,19 @@ function Reports() {
     Download Excel
   </button>
 </div>
+<div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+  <select value={assetStatus} onChange={(e) => setAssetStatus(e.target.value)}>
+    <option value="">All Status</option>
+    <option value="available">Available</option>
+    <option value="assigned">Assigned</option>
+  </select>
 
+  <select value={assetType} onChange={(e) => setAssetType(e.target.value)}>
+    <option value="">All Types</option>
+    <option value="laptop">Laptop</option>
+    <option value="printer">Printer</option>
+  </select>
+</div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>

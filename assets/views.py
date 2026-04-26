@@ -95,6 +95,7 @@ def reports_summary(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def export_assets_excel(request):
+
     workbook = openpyxl.Workbook()
     sheet = workbook.active
     sheet.title = "Assets Report"
@@ -107,9 +108,22 @@ def export_assets_excel(request):
         "Purchase Date",
         "Status",
     ]
+
     sheet.append(headers)
 
+    status = request.GET.get("status")
+    device_type = request.GET.get("type")
+
     assets = Asset.objects.all()
+
+    if status:
+        if status == "available":
+            assets = assets.filter(is_assigned=False)
+        elif status == "assigned":
+            assets = assets.filter(is_assigned=True)
+
+    if device_type:
+        assets = assets.filter(device_type__iexact=device_type)
 
     for asset in assets:
         sheet.append([
@@ -122,10 +136,10 @@ def export_assets_excel(request):
         ])
 
     response = HttpResponse(
-    content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
     response["Content-Disposition"] = 'attachment; filename="assets_report.xlsx"'
 
     workbook.save(response)
     return response
-
