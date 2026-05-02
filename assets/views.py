@@ -6,6 +6,8 @@ from .models import Asset, Employee, Assignment
 from .serializers import AssetSerializer, EmployeeSerializer, AssignmentSerializer
 from django.http import HttpResponse
 import openpyxl 
+from django.db.models import Count
+from rest_framework.views import APIView
 
 class AssetViewSet(viewsets.ModelViewSet):
     queryset = Asset.objects.all()
@@ -69,6 +71,84 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         return context
     
 
+
+class EmployeeReportView(APIView):
+    def get(self, request):
+        queryset = Employee.objects.all()
+
+        # filters
+        department = request.GET.get("department")
+        employee_id = request.GET.get("employee_id")
+        search = request.GET.get("search")
+
+        if department:
+            queryset = queryset.filter(department__icontains=department)
+
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+
+        if search:
+            queryset = queryset.filter(full_name__icontains=search)
+
+        # count assignments (devices)
+        queryset = queryset.annotate(
+            total_devices=Count("assignments")
+        )
+
+        data = [
+            {
+                "id": emp.id,
+                "full_name": emp.full_name,
+                "employee_id": emp.employee_id,
+                "email": emp.email,
+                "department": emp.department,
+                "job_title": emp.job_title,
+                "total_devices": emp.total_devices,
+            }
+            for emp in queryset
+        ]
+
+        return Response(data)
+
+
+class AssignmentReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        queryset = Assignment.objects.select_related("asset", "employee").all()
+
+        employee_id = request.GET.get("employee_id")
+        asset_tag = request.GET.get("asset_tag")
+        status = request.GET.get("status")  # active / returned
+
+        if employee_id:
+            queryset = queryset.filter(employee__employee_id=employee_id)
+
+        if asset_tag:
+            queryset = queryset.filter(asset__asset_tag=asset_tag)
+
+        if status == "active":
+            queryset = queryset.filter(returned_at__isnull=True)
+
+        if status == "returned":
+            queryset = queryset.filter(returned_at__isnull=False)
+
+        data = [
+            {
+                "id": assignment.id,
+                "asset_name": assignment.asset.name,
+                "asset_tag": assignment.asset.asset_tag,
+                "employee_name": assignment.employee.full_name,
+                "employee_id": assignment.employee.employee_id,
+                "assigned_at": assignment.assigned_at,
+                "returned_at": assignment.returned_at,
+                "status": "Returned" if assignment.returned_at else "Active",
+                "notes": assignment.notes,
+            }
+            for assignment in queryset
+        ]
+
+        return Response(data)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
