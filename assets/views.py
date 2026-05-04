@@ -8,6 +8,8 @@ from django.http import HttpResponse
 import openpyxl 
 from django.db.models import Count
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser
+from io import BytesIO
 
 class AssetViewSet(viewsets.ModelViewSet):
     queryset = Asset.objects.all()
@@ -110,12 +112,11 @@ class EmployeeReportView(APIView):
 
         return Response(data)
 
-
 class AssignmentReportView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        queryset = Assignment.objects.select_related("asset", "employee").all()
+        queryset = Assignment.objects.select_related("asset", "employee")
 
         employee_id = request.GET.get("employee_id")
         asset_tag = request.GET.get("asset_tag")
@@ -135,20 +136,21 @@ class AssignmentReportView(APIView):
 
         data = [
             {
-                "id": assignment.id,
                 "asset_name": assignment.asset.name,
                 "asset_tag": assignment.asset.asset_tag,
                 "employee_name": assignment.employee.full_name,
                 "employee_id": assignment.employee.employee_id,
                 "assigned_at": assignment.assigned_at,
                 "returned_at": assignment.returned_at,
-                "status": "Returned" if assignment.returned_at else "Active",
+                "status": "Returned" if assignment.returned_at else "Assigned",
                 "notes": assignment.notes,
             }
             for assignment in queryset
         ]
 
         return Response(data)
+
+    
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -174,52 +176,140 @@ def reports_summary(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+
 def export_assets_excel(request):
-
     workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "Assets Report"
 
-    headers = [
-        "Name",
-        "Type",
-        "Serial Number",
-        "Asset Tag",
-        "Purchase Date",
-        "Status",
-    ]
+    assets_sheet = workbook.active
+    assets_sheet.title = "Assets"
 
-    sheet.append(headers)
+    assets_sheet.append(["Name", "Type", "Serial Number", "Asset Tag", "Purchase Date", "Status"])
 
     status = request.GET.get("status")
     device_type = request.GET.get("type")
 
     assets = Asset.objects.all()
 
-    if status:
-        if status == "available":
-            assets = assets.filter(is_assigned=False)
-        elif status == "assigned":
-            assets = assets.filter(is_assigned=True)
+    if status == "available":
+        assets = assets.filter(is_assigned=False)
+    elif status == "assigned":
+        assets = assets.filter(is_assigned=True)
 
     if device_type:
         assets = assets.filter(device_type__iexact=device_type)
 
     for asset in assets:
-        sheet.append([
+        assets_sheet.append([
             asset.name,
             asset.device_type,
             asset.serial_number,
             asset.asset_tag,
             str(asset.purchase_date) if asset.purchase_date else "",
-            "Assigned" if asset.is_assigned else "Available",
+            "Assigned" if asset.is_assigned else "Available"
         ])
 
+    # Auto width
+    for column in assets_sheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        assets_sheet.column_dimensions[column_letter].width = max_length + 2
+
+
+    # =========================
+    # 2. EMPLOYEES SHEET
+    # =========================
+    employees_sheet = workbook.create_sheet("Employees")
+
+    employees_sheet.append(["Name", "Employee ID", "Department", "Email"])
+
+    employee_id = request.GET.get("employee_id")
+    search = request.GET.get("search")
+
+    employees = Employee.objects.all()
+
+    if employee_id:
+        employees = employees.filter(employee_id=employee_id)
+
+    if search:
+        employees = employees.filter(full_name__icontains=search)
+
+    for emp in employees:
+        employees_sheet.append([
+            emp.full_name,
+            emp.employee_id,
+            emp.department,
+            emp.email
+        ])
+
+    # Auto width
+    for column in employees_sheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        employees_sheet.column_dimensions[column_letter].width = max_length + 2
+
+
+  
+    assignments_sheet = workbook.create_sheet("Assignments")
+
+    assignments_sheet.append(["Asset", "Employee", "Assigned At", "Returned At", "Status"])
+
+    assignment_status = request.GET.get("assignment_status")
+
+    assignments = Assignment.objects.select_related("asset", "employee")
+
+    if assignment_status == "active":
+        assignments = assignments.filter(returned_at__isnull=True)
+    elif assignment_status == "returned":
+        assignments = assignments.filter(returned_at__isnull=False)
+
+    for a in assignments:
+        assignments_sheet.append([
+            a.asset.name,
+            a.employee.full_name,
+            str(a.assigned_at),
+            str(a.returned_at) if a.returned_at else "",
+            "Returned" if a.returned_at else "Assigned"
+        ])
+
+    # Auto width
+    for column in assignments_sheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        assignments_sheet.column_dimensions[column_letter].width = max_length + 2
+
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+
     response = HttpResponse(
+        buffer,
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    response["Content-Disposition"] = 'attachment; filename="assets_report.xlsx"'
+    response["Content-Disposition"] = "attachment; filename=full_report.xlsx"
 
-    workbook.save(response)
-    return response
+    return response({
+            "message": "Assets import completed",
+            "created": created,
+            "updated": updated,
+            "errors": errors,
+        })

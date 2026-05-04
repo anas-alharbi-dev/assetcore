@@ -8,6 +8,7 @@ from .views import (
     export_assets_excel,
     EmployeeReportView,
     AssignmentReportView,
+    
 )
 
 router = DefaultRouter()
@@ -19,6 +20,6 @@ urlpatterns = [
     path("reports/summary/", reports_summary),
     path("reports/export-excel/", export_assets_excel),
     path('reports/employees/', EmployeeReportView.as_view()),
-    path("reports/assignments/", AssignmentReportView.as_view())
+    path("reports/assignments/", AssignmentReportView.as_view()),
 
 ] + router.urls 

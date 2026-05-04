@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { authFetch } from "../lib/auth";
 
+const API_BASE = "http://127.0.0.1:8000/api";
+
 type Summary = {
   total_assets: number;
   assigned_assets: number;
@@ -15,28 +17,74 @@ type Asset = {
   device_type: string;
   serial_number: string;
   asset_tag: string;
-  purchase_date: string | null;
-  is_assigned: boolean;
+  status: string;
 };
 
-const API_BASE = "http://127.0.0.1:8000/api";
+type Employee = {
+  id: number;
+  name: string;
+  employee_id: string;
+};
 
-function Reports() {
+type Assignment = {
+  asset_name: string;
+  asset_tag: string;
+  employee_name: string;
+  employee_id: string;
+  assigned_at: string;
+  returned_at: string | null;
+  status: string;
+};
+
+export default function Reports() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [assetStatus, setAssetStatus] = useState("");
-const [assetType, setAssetType] = useState("");
 
+  const [assetStatus, setAssetStatus] = useState("");
+  const [assetType, setAssetType] = useState("");
+
+  // ================= FETCH =================
+  useEffect(() => {
+    Promise.all([
+      authFetch(`${API_BASE}/reports/summary/`).then(r => r.json()),
+      authFetch(`${API_BASE}/assets/`).then(r => r.json()),
+      authFetch(`${API_BASE}/employees/`).then(r => r.json()),
+      authFetch(`${API_BASE}/reports/assignments/`).then(r => r.json()),
+    ])
+      .then(([summary, assets, employees, assignments]) => {
+        setSummary(summary);
+        setAssets(assets);
+        setEmployees(employees);
+        setAssignments(assignments);
+      })
+      .catch(() => setError("Failed to load data"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ================= DOWNLOAD =================
  const handleDownloadExcel = () => {
   const params = new URLSearchParams();
 
   if (assetStatus) params.append("status", assetStatus);
   if (assetType) params.append("type", assetType);
 
-  authFetch(`${API_BASE}/reports/export-excel/?${params.toString()}`)
-    .then((res) => res.blob())
+ fetch(`${API_BASE}/reports/export-excel/?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Download failed");
+      }
+      return res.blob(); // ✅ أهم سطر
+    })
     .then((blob) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -45,164 +93,125 @@ const [assetType, setAssetType] = useState("");
       document.body.appendChild(a);
       a.click();
       a.remove();
-    });
+    })
+    .catch((err) => console.error("Download error:", err));
 };
 
-  useEffect(() => {
-    Promise.all([
-      authFetch(`${API_BASE}/reports/summary/`)
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error("Failed to fetch reports");
-          }
-          return res.json();
-        })
-        .then((data: Summary) => setSummary(data)),
+  // ================= FILTER =================
+  const filteredAssets = assets.filter(a => {
+    if (assetStatus && a.status !== assetStatus) return false;
+    if (assetType && a.device_type !== assetType) return false;
+    return true;
+  });
 
-      authFetch(`${API_BASE}/assets/`)
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error("Failed to fetch assets");
-          }
-          return res.json();
-        })
-        .then((data: Asset[]) => setAssets(data)),
-    ])
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+  // ================= UI =================
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
     <div>
-      <h1 style={{ fontSize: "32px", marginBottom: "20px", color: "#ffffff" }}>
-        Reports
-      </h1>
+      <h1>Reports</h1>
 
-      {loading && <p style={{ color: "#cbd5e1" }}>Loading reports...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {!loading && !error && summary && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          <StatCard title="Total Assets" value={summary.total_assets} />
-          <StatCard title="Assigned Assets" value={summary.assigned_assets} />
-          <StatCard title="Available Assets" value={summary.available_assets} />
-          <StatCard title="Employees" value={summary.total_employees} />
-          <StatCard title="Assignments" value={summary.total_assignments} />
+      {/* SUMMARY */}
+      {summary && (
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Card title="Assets" value={summary.total_assets} />
+          <Card title="Employees" value={summary.total_employees} />
+          <Card title="Assignments" value={summary.total_assignments} />
         </div>
       )}
 
-      {!loading && !error && (
-        <div
-          style={{
-            background: "#ffffff",
-            borderRadius: "12px",
-            padding: "20px",
-            marginTop: "24px",
-          }}
-        >
-         <div style={{
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: "16px"
-}}>
-  <h2 style={{ margin: 0 }}>Assets Report</h2>
+      {/* FILTER + DOWNLOAD */}
+      <div style={{ marginTop: "20px" }}>
+        <select onChange={(e) => setAssetStatus(e.target.value)}>
+          <option value="">All Status</option>
+          <option value="available">Available</option>
+          <option value="assigned">Assigned</option>
+        </select>
 
-  <button
-    onClick={handleDownloadExcel}
-    style={{
-      background: "#2563eb",
-      color: "#fff",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      cursor: "pointer",
-    }}
-  >
-    Download Excel
-  </button>
-</div>
-<div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-  <select value={assetStatus} onChange={(e) => setAssetStatus(e.target.value)}>
-    <option value="">All Status</option>
-    <option value="available">Available</option>
-    <option value="assigned">Assigned</option>
-  </select>
+        <select onChange={(e) => setAssetType(e.target.value)}>
+          <option value="">All Types</option>
+          <option value="laptop">Laptop</option>
+          <option value="printer">Printer</option>
+        </select>
 
-  <select value={assetType} onChange={(e) => setAssetType(e.target.value)}>
-    <option value="">All Types</option>
-    <option value="laptop">Laptop</option>
-    <option value="printer">Printer</option>
-  </select>
-</div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Name</th>
-                  <th style={thStyle}>Type</th>
-                  <th style={thStyle}>Serial Number</th>
-                  <th style={thStyle}>Asset Tag</th>
-                  <th style={thStyle}>Purchase Date</th>
-                  <th style={thStyle}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assets.map((asset) => (
-                  <tr key={asset.id}>
-                    <td style={tdStyle}>{asset.name}</td>
-                    <td style={tdStyle}>{asset.device_type}</td>
-                    <td style={tdStyle}>{asset.serial_number}</td>
-                    <td style={tdStyle}>{asset.asset_tag}</td>
-                    <td style={tdStyle}>{asset.purchase_date || "-"}</td>
-                    <td style={tdStyle}>
-                      {asset.is_assigned ? "Assigned" : "Available"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+        <button onClick={handleDownloadExcel}>Download Excel</button>
+      </div>
+
+      {/* ASSETS */}
+      <h2>Assets</h2>
+      <table border={1}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Serial</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredAssets.map(a => (
+            <tr key={a.id}>
+              <td>{a.name}</td>
+              <td>{a.device_type}</td>
+              <td>{a.serial_number}</td>
+              <td>{a.status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* EMPLOYEES */}
+      <h2>Employees</h2>
+      <table border={1}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {employees.map(e => (
+            <tr key={e.id}>
+              <td>{e.name}</td>
+              <td>{e.employee_id}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* ASSIGNMENTS */}
+      <h2>Assignments</h2>
+      <table border={1}>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Employee</th>
+            <th>Assigned</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assignments.map((a, i) => (
+            <tr key={i}>
+              <td>{a.asset_name}</td>
+              <td>{a.employee_name}</td>
+              <td>{a.assigned_at}</td>
+              <td>{a.status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function StatCard({ title, value }: { title: string; value: number }) {
+// ================= CARD =================
+function Card({ title, value }: { title: string; value: number }) {
   return (
-    <div
-      style={{
-        background: "#ffffff",
-        borderRadius: "12px",
-        padding: "20px",
-      }}
-    >
-      <p style={{ color: "#666" }}>{title}</p>
-      <h2>{value}</h2>
+    <div style={{ border: "1px solid #ccc", padding: "10px" }}>
+      <h4>{title}</h4>
+      <p>{value}</p>
     </div>
   );
 }
-
-const thStyle = {
-  textAlign: "left" as const,
-  padding: "12px",
-  borderBottom: "1px solid #e5e7eb",
-  color: "#6b7280",
-  fontSize: "14px",
-};
-
-const tdStyle = {
-  padding: "12px",
-  borderBottom: "1px solid #f1f5f9",
-  color: "#111827",
-  fontSize: "14px",
-};
-
-export default Reports;
