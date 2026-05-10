@@ -50,12 +50,12 @@ export default function Reports() {
 
   // ================= FETCH =================
   useEffect(() => {
-    Promise.all([
-      authFetch(`${API_BASE}/reports/summary/`).then(r => r.json()),
-      authFetch(`${API_BASE}/assets/`).then(r => r.json()),
-      authFetch(`${API_BASE}/employees/`).then(r => r.json()),
-      authFetch(`${API_BASE}/reports/assignments/`).then(r => r.json()),
-    ])
+   Promise.all([
+  authFetch(`${API_BASE}/reports/summary/`).then(r => r.json()),
+  authFetch(`${API_BASE}/assets/`).then(r => r.json()),
+  authFetch(`${API_BASE}/employees/`).then(r => r.json()),
+  authFetch(`${API_BASE}/assignments/`).then(r => r.json()),
+])
       .then(([summary, assets, employees, assignments]) => {
         setSummary(summary);
         setAssets(assets);
@@ -73,30 +73,22 @@ export default function Reports() {
   if (assetStatus) params.append("status", assetStatus);
   if (assetType) params.append("type", assetType);
 
- fetch(`${API_BASE}/reports/export-excel/?${params.toString()}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
+ authFetch(`${API_BASE}/reports/export-excel/?${params.toString()}`)
+  .then((res) => {
+    if (!res.ok) throw new Error("Download failed");
+    return res.blob(); // ✅ هنا نحول إلى ملف
   })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Download failed");
-      }
-      return res.blob(); // ✅ أهم سطر
-    })
-    .then((blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "assets_report.xlsx";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    })
-    .catch((err) => console.error("Download error:", err));
-};
-
+  .then((blob) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "assets_report.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  })
+  .catch((err) => console.error("Download error:", err));
+ };
   // ================= FILTER =================
   const filteredAssets = assets.filter(a => {
     if (assetStatus && a.status !== assetStatus) return false;
@@ -215,3 +207,4 @@ function Card({ title, value }: { title: string; value: number }) {
     </div>
   );
 }
+

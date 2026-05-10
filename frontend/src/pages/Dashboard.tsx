@@ -14,8 +14,7 @@ type Summary = {
   total_assets: number;
   assigned_assets: number;
   available_assets: number;
-  total_employees: number;
-  total_assignments: number;
+  total_employees: number; 
 };
 
 const API_BASE = "http://127.0.0.1:8000/api";
@@ -85,7 +84,7 @@ function Dashboard() {
             <StatCard title="Assigned Assets" value={summary?.assigned_assets ?? 0} />
             <StatCard title="Available Assets" value={summary?.available_assets ?? 0} />
             <StatCard title="Employees" value={summary?.total_employees ?? 0} />
-            <StatCard title="Assignments" value={summary?.total_assignments ?? 0} />
+          
           </div>
 
           <div

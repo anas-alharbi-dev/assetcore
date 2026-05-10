@@ -49,21 +49,17 @@ export async function refreshAccessToken() {
 export async function authFetch(url: string, options: RequestInit = {}) {
   let token = getAccessToken();
 
- const makeRequest = async (accessToken: string | null) => {
-  console.log("ACCESS TOKEN:", accessToken);
-  console.log(
-    "AUTH HEADER:",
-    accessToken ? `Bearer ${accessToken}`: "NO TOKEN"
-  );
-
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-};
+  const makeRequest = async (accessToken: string | null) => {
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        ...(accessToken
+          ? { Authorization:`Bearer ${accessToken}` }
+          : {}),
+      },
+    });
+  };
 
   let response = await makeRequest(token);
 
@@ -72,12 +68,11 @@ export async function authFetch(url: string, options: RequestInit = {}) {
       const newAccess = await refreshAccessToken();
       response = await makeRequest(newAccess);
     } catch (err) {
-  clearTokens();
-  window.location.href = "/login";
-  throw new Error("Session expired. Please login again.");
-}
+      clearTokens();
+      window.location.href = "/login";
+      throw new Error("Session expired. Please login again.");
+    }
   }
 
   return response;
 }
-

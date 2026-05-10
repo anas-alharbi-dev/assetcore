@@ -4,11 +4,11 @@ from .views import (
     AssetViewSet,
     EmployeeViewSet,
     AssignmentViewSet,
-    reports_summary,
     export_assets_excel,
-    EmployeeReportView,
-    AssignmentReportView,
-    
+    export_assignments_excel,
+    export_employees_excel,
+    import_assets_excel,
+    reports_summary
 )
 
 router = DefaultRouter()
@@ -16,10 +16,13 @@ router.register(r'assets', AssetViewSet, basename='asset')
 router.register(r'employees', EmployeeViewSet, basename='employee')
 router.register(r'assignments', AssignmentViewSet, basename='assignment')
 
-urlpatterns = [
-    path("reports/summary/", reports_summary),
-    path("reports/export-excel/", export_assets_excel),
-    path('reports/employees/', EmployeeReportView.as_view()),
-    path("reports/assignments/", AssignmentReportView.as_view()),
 
-] + router.urls 
+urlpatterns = [
+    path("reports/export-excel/", export_assets_excel),
+
+    path("reports/assignments-excel/", export_assignments_excel),
+    path("reports/employees-excel/", export_employees_excel),
+path("assets/import-excel/", import_assets_excel),
+    path("reports/summary/", reports_summary),
+] + router.urls
+
