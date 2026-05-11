@@ -90,9 +90,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'assetcore',
-        'USER': 'anas',
-        'PASSWORD': '',
+        'NAME': 'assetcore_db',
+        'USER': 'postgres',
+        'PASSWORD': '123456789',
         'HOST': 'localhost',
         'PORT': '5432',
     }
