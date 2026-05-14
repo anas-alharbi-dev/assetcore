@@ -1,5 +1,6 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter 
+from .views import import_assets
 from .views import (
     AssetViewSet,
     EmployeeViewSet,
@@ -7,7 +8,6 @@ from .views import (
     export_assets_excel,
     export_assignments_excel,
     export_employees_excel,
-    import_assets_excel,
     reports_summary
 )
 
@@ -19,10 +19,9 @@ router.register(r'assignments', AssignmentViewSet, basename='assignment')
 
 urlpatterns = [
     path("reports/export-excel/", export_assets_excel),
-
     path("reports/assignments-excel/", export_assignments_excel),
     path("reports/employees-excel/", export_employees_excel),
-path("assets/import-excel/", import_assets_excel),
     path("reports/summary/", reports_summary),
+    path('import-assets/', import_assets),
 ] + router.urls
 

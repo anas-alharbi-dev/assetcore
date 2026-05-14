@@ -196,3 +196,52 @@ def import_assets_excel(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def import_assets(request):
+    file = request.FILES.get('file')
+
+    if not file:
+        return Response({"error": "No file uploaded"}, status=400)
+
+    try:
+        df = pd.read_excel(file)
+
+        created_count = 0
+        errors = []
+
+        for index, row in df.iterrows():
+            row_number = index + 2  # عشان الإكسل يبدأ من 1 + header
+
+            name = row.get('name')
+            device_type = row.get('device_type')
+
+            if pd.isna(name):
+                errors.append(f"Row {row_number}: name is missing")
+                continue
+
+            if pd.isna(device_type):
+                errors.append(f"Row {row_number}: device_type is missing")
+                continue
+
+            Asset.objects.create(
+                name=name,
+                device_type=device_type,
+                serial_number=row.get('serial_number'),
+                asset_tag=row.get('asset_tag'),
+                purchase_date=row.get('purchase_date') if pd.notna(row.get('purchase_date')) else None,
+                is_assigned=False,
+            )
+
+            created_count += 1
+
+        return Response({
+            "created": created_count,
+            "errors": errors
+        }, status=201)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
