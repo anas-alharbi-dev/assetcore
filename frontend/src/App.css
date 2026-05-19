@@ -1,8 +1,0 @@
-button,
-input {
-  font: inherit;
-}
-
-input:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
