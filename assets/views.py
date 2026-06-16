@@ -8,7 +8,7 @@ from django.http import HttpResponse
 import pandas as pd
 import openpyxl
 from django.http import JsonResponse
-from .models import Employee
+from .models import Asset, Employee, Assignment
 
 
 class AssetViewSet(viewsets.ModelViewSet):
@@ -312,3 +312,60 @@ def import_assets(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=400)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def import_employees(request):
+    file = request.FILES.get('file')
+
+    if not file:
+        return Response({"error": "No file uploaded"}, status=400)
+
+    try:
+        df = pd.read_excel(file)
+
+        created_count = 0
+        errors = []
+
+        for index, row in df.iterrows():
+            row_number = index + 2
+
+            full_name = row.get('full_name') or row.get('Name')
+            employee_id = row.get('employee_id') or row.get('Employee ID')
+            email = row.get('email') or row.get('Email')
+            department = row.get('department') or row.get('Department')
+            job_title = row.get('job_title') or row.get('Job Title') or ''
+
+            if pd.isna(full_name):
+                errors.append(f"Row {row_number}: full_name is missing")
+                continue
+
+            if pd.isna(employee_id):
+                errors.append(f"Row {row_number}: employee_id is missing")
+                continue
+
+            if pd.isna(email):
+                errors.append(f"Row {row_number}: email is missing")
+                continue
+
+            if pd.isna(department):
+                errors.append(f"Row {row_number}: department is missing")
+                continue
+
+            Employee.objects.create(
+                full_name=full_name,
+                employee_id=employee_id,
+                email=email,
+                department=department,
+                job_title=job_title if pd.notna(job_title) else ''
+            )
+
+            created_count += 1
+
+        return Response({
+            "created": created_count,
+            "errors": errors
+        }, status=201)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+
 from .views import (
     AssetViewSet,
     EmployeeViewSet,
@@ -11,6 +12,7 @@ from .views import (
     reports_summary,
     dashboard_stats,
     import_assets,
+    import_employees,
 )
 
 router = DefaultRouter()
@@ -25,5 +27,6 @@ urlpatterns = [
     path("reports/summary/", reports_summary),
     path("dashboard/stats/", dashboard_stats),
     path("import-assets/", import_assets),
+    path("import-employees/", import_employees),
 ] + router.urls
 
