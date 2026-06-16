@@ -9,6 +9,7 @@ from .views import (
     export_assignments_excel,
     export_employees_excel,
     reports_summary,
+    dashboard_stats,
     import_assets,
 )
 
@@ -22,6 +23,7 @@ urlpatterns = [
     path("reports/assignments-excel/", export_assignments_excel),
     path("reports/employees-excel/", export_employees_excel),
     path("reports/summary/", reports_summary),
-    path('import-assets/', import_assets),
+    path("dashboard/stats/", dashboard_stats),
+    path("import-assets/", import_assets),
 ] + router.urls
 

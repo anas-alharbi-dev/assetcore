@@ -138,6 +138,8 @@ def export_assignments_excel(request):
             str(a.returned_at) if a.returned_at else ""
         ])
 
+
+
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
@@ -168,6 +170,27 @@ def export_employees_excel(request):
 
     workbook.save(response)
     return response
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_stats(request):
+    total_assets = Asset.objects.count()
+    assigned_assets = Asset.objects.filter(is_assigned=True).count()
+    available_assets = Asset.objects.filter(is_assigned=False).count()
+    total_employees = Employee.objects.count()
+
+    active_assignments = Assignment.objects.filter(returned_at__isnull=True).count()
+    returned_assignments = Assignment.objects.filter(returned_at__isnull=False).count()
+
+    return Response({
+        "total_assets": total_assets,
+        "assigned_assets": assigned_assets,
+        "available_assets": available_assets,
+        "total_employees": total_employees,
+        "active_assignments": active_assignments,
+        "returned_assignments": returned_assignments,
+    })
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

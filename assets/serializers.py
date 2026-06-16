@@ -15,16 +15,34 @@ class EmployeeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AssignmentSerializer(serializers.ModelSerializer):
+    employee = EmployeeSerializer(read_only=True)
+    asset = AssetSerializer(read_only=True)
+
+    employee_id = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        source='employee',
+        write_only=True
+    )
+
+    asset_id = serializers.PrimaryKeyRelatedField(
+        queryset=Asset.objects.all(),
+        source='asset',
+        write_only=True
+    )
+
     class Meta:
         model = Assignment
-        fields = '__all__'
-
-    def _init_(self, *args, **kwargs):
-        super()._init_(*args, **kwargs)
-        request = self.context.get('request')
-
-        if request and request.method in ['POST', 'PUT', 'PATCH']:
-            self.fields['asset'].queryset = Asset.objects.filter(is_assigned=False)
+        fields = [
+            'id',
+            'employee',
+            'asset',
+            'employee_id',
+            'asset_id',
+            'assigned_at',
+            'returned_at',
+            'notes',
+            'created_at',
+        ]
 
     def validate(self, data):
         asset = data.get('asset')
@@ -42,8 +60,10 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
         if assignment.returned_at is None:
             assignment.asset.is_assigned = True
+            assignment.asset.status = 'assigned'
         else:
             assignment.asset.is_assigned = False
+            assignment.asset.status = 'available'
 
         assignment.asset.save()
         return assignment
@@ -57,8 +77,10 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
         if instance.returned_at is None:
             instance.asset.is_assigned = True
+            instance.asset.status = 'assigned'
         else:
             instance.asset.is_assigned = False
+            instance.asset.status = 'available'
 
         instance.asset.save()
         instance.save()
