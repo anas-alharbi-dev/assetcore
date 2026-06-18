@@ -133,7 +133,7 @@ def export_assignments_excel(request):
     for a in assignments:
         sheet.append([
             a.asset.name,
-            a.employee.name,
+            a.employee.full_name,
             str(a.assigned_at),
             str(a.returned_at) if a.returned_at else ""
         ])
@@ -161,7 +161,7 @@ def export_employees_excel(request):
     employees = Employee.objects.all()
 
     for e in employees:
-        sheet.append([e.name, e.employee_id])
+       sheet.append([e.full_name, e.employee_id, e.email, e.department, e.job_title])
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
